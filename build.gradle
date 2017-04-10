@@ -1,75 +1,45 @@
-//apply plugin: 'com.android.library'
-//
-//android {
-//    compileSdkVersion 25
-//    buildToolsVersion "25.0.2"
-//
-//    defaultConfig {
-//        minSdkVersion 16
-//        targetSdkVersion 25
-//        versionCode 1
-//        versionName "1.0"
-//
-//        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-//
-//    }
-//    buildTypes {
-//        release {
-//            minifyEnabled false
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//        }
-//    }
-//}
-//
-//dependencies {
-//    compile fileTree(dir: 'libs', include: ['*.jar'])
-//    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-//        exclude group: 'com.android.support', module: 'support-annotations'
-//    })
-//    compile 'com.android.support:appcompat-v7:25.3.1'
-//    testCompile 'junit:junit:4.12'
-//}
-buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.2'
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-    }
-}
-
 plugins {
     id "com.jfrog.bintray" version "1.5"
 }
 
-group = 'com.calibraint.android'
-version = '0.1'
+apply plugin: 'com.android.library'
 
-allprojects {
-    repositories {
-        jcenter()
-    }
-    apply plugin: 'com.android.library'
-    apply plugin: 'com.github.dcendents.android-maven'
+ext {
+    bintrayRepo = 'android'
+    bintrayName = 'android-utils'
+    bintrayOrg = 'calibraint'
+    versionName = "1.0.0"
+
+    publishedGroupId = 'com.calibraint.android'
+    libraryName = 'android-utils'
+    artifact = 'android-utils'
+
+    libraryDescription = 'App switching library for Android'
+
+    libraryVersion = '1.0.0'
+
+    developerId = 'madhankumar'
+    developerName = 'madhan kumar'
+    developerEmail = 'mke2212@gmail.com '
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
 }
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '25.0.0'
+    buildToolsVersion "25.0.0"
 
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 1
-        versionName "0.1"
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
 }
@@ -79,59 +49,92 @@ dependencies {
     compile 'com.google.android.gms:play-services:7.5.0'
 }
 
+//bintray init
+
+apply plugin: 'com.github.dcendents.android-maven'
+
+group = publishedGroupId                               // Maven Group ID for the artifact
+
 install {
     repositories.mavenInstaller {
-        pom.project {
-            name 'Android-utils'
-            description 'A simple android library for EditText validation, check internet connection and show Toast messages'
-            url 'https://github.com/madhanhere/android-utils'
-            inceptionYear '2017'
+        // This generates POM.xml with proper parameters
+        pom {
+            project {
+                packaging 'aar'
+                groupId publishedGroupId
+                artifactId artifact
 
-            packaging 'aar'
-            groupId 'com.calibraint.android'
-            artifactId 'android-utils'
-            version '0.1'
+                // Add your description here
+                name libraryName
+                description libraryDescription
 
-            licenses {
-                license {
-                    name 'The Apache Software License, Version 2.0'
-                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    distribution 'repo'
+                // Set your license
+                licenses {
+                    license {
+                        name licenseName
+                        url licenseUrl
+                    }
                 }
-            }
-            scm {
-                connection 'https://github.com/madhanhere/android-utils.git'
-                url 'https://github.com/madhanhere/android-utils'
-
-            }
-            developers {
-                developer {
-                    name 'madhankumar'
+                developers {
+                    developer {
+                        id developerId
+                        name developerName
+                        email developerEmail
+                    }
                 }
             }
         }
     }
 }
+
+version = libraryVersion
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    description "app javadocs"
+    source = android.libraryVariants["release"].javaCompile.source
+    ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
+    classpath = files(android.libraryVariants["release"].javaCompile.classpath.files) + files(ext.androidJar)
+    options.links("http://docs.oracle.com/javase/7/docs/api/");
+    options.links("http://d.android.com/reference/");
+    exclude '**/BuildConfig.java'
+    exclude '**/R.java'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+// Bintray
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
 
 bintray {
-    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    user = properties.getProperty("bintray.user")
+    key = properties.getProperty("bintray.apikey")
+
     configurations = ['archives']
     pkg {
-        repo = 'android'
-        name = 'calibraint'
-        userOrg = user
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/bintray/gradle-bintray-plugin.git'
+        repo = bintrayRepo
+        name = bintrayName
+        userOrg = bintrayOrg
+        desc = libraryDescription
+        licenses = allLicenses
+        publish = true
+        publicDownloadNumbers = true
         version {
-            name = '0.1'
-            desc = 'Gradle Bintray Plugin 1.0 final'
-            vcsTag = '0.1'
-            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
+            name = bintrayName
+            desc = libraryDescription
         }
     }
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.4'
 }
